@@ -3,76 +3,91 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Diego</title>
+  <title>Hidden Button with Chatbot</title>
   <style>
     html,body{height:100%;margin:0}
     body{background:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
     .page{display:flex;align-items:center;justify-content:center;height:100%;width:100%}
-    /* front is blank white */
     #front{background:#fff}
-    /* secret page hidden by default */
-    #secret{display:none;flex-direction:column;gap:12px}
+    #secret{display:none;flex-direction:column;gap:12px;padding:16px;box-sizing:border-box}
 
-    /* invisible clickable area in bottom-right */
     .invis-btn{
-      position:fixed;
-      right:12px;
-      bottom:12px;
-      width:48px;
-      height:48px;
-      background:transparent;
-      border:0;
-      padding:0;
-      margin:0;
-      cursor:pointer;
-      opacity:0;
+      position:fixed;right:12px;bottom:12px;width:48px;height:48px;background:transparent;border:0;padding:0;margin:0;cursor:pointer;opacity:0;
     }
 
-    /* accessible hidden text for screen readers */
-    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-
-    .secret-card{padding:28px;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,0.08);text-align:center}
-    .secret-title{font-size:20px;margin:0}
-    .secret-sub{margin:6px 0 0 0;color:#444}
-    .link{display:inline-block;margin-top:12px;padding:8px 12px;border-radius:6px;text-decoration:none;border:1px solid #ddd}
+    .chat-container{display:flex;flex-direction:column;width:100%;max-width:600px;height:80vh;border:1px solid #ccc;border-radius:8px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,0.08)}
+    .chat-log{flex:1;overflow-y:auto;padding:12px;background:#fafafa}
+    .msg{margin:8px 0;padding:8px 12px;border-radius:6px;max-width:80%}
+    .user{background:#dce7ff;align-self:flex-end}
+    .bot{background:#eaeaea;align-self:flex-start}
+    .chat-input{display:flex;border-top:1px solid #ddd}
+    .chat-input input{flex:1;padding:10px;border:0;outline:0;font-size:15px}
+    .chat-input button{padding:10px 16px;border:0;background:#007aff;color:#fff;cursor:pointer}
   </style>
 </head>
 <body>
-  <!-- blank front page -->
   <div id="front" class="page" aria-hidden="false"></div>
 
-  <!-- secret page -->
   <div id="secret" class="page" aria-hidden="true">
-    <div class="secret-card">
-      <h1 class="secret-title">Secret Page</h1>
-      <p class="secret-sub">You found the hidden link.</p>
-      <a class="link" href="#" onclick="location.hash='';return false;">Go back</a>
+    <div class="chat-container">
+      <div id="chat-log" class="chat-log"></div>
+      <form id="chat-form" class="chat-input">
+        <input id="chat-input" type="text" placeholder="Type a message..." autocomplete="off" />
+        <button type="submit">Send</button>
+      </form>
     </div>
+    <a href="#" onclick="location.hash='';return false;">Go back</a>
   </div>
 
-  <!-- invisible button bottom-right -->
-  <button class="invis-btn" aria-label="open secret page" onclick="location.hash='secret'"><span class="sr-only">Open secret page</span></button>
+  <button class="invis-btn" aria-label="open secret page" onclick="location.hash='secret'"></button>
 
   <script>
     function showSecret(){
       document.getElementById('front').style.display = 'none';
-      document.getElementById('front').setAttribute('aria-hidden','true');
       document.getElementById('secret').style.display = 'flex';
-      document.getElementById('secret').setAttribute('aria-hidden','false');
     }
     function showFront(){
       document.getElementById('secret').style.display = 'none';
-      document.getElementById('secret').setAttribute('aria-hidden','true');
       document.getElementById('front').style.display = 'flex';
-      document.getElementById('front').setAttribute('aria-hidden','false');
     }
-
     window.addEventListener('hashchange', function(){
       if(location.hash === '#secret') showSecret(); else showFront();
     });
-
-    // respect direct link with #secret
     if(location.hash === '#secret') showSecret();
+
+    // Chatbot logic (connect to API)
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('chat-input');
+    const log = document.getElementById('chat-log');
+
+    function addMessage(text, cls){
+      const msg = document.createElement('div');
+      msg.className = 'msg ' + cls;
+      msg.textContent = text;
+      log.appendChild(msg);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const userMsg = input.value.trim();
+      if(!userMsg) return;
+      addMessage(userMsg, 'user');
+      input.value = '';
+      
+      // Placeholder: replace URL and headers with your ChatGPT API implementation
+      try {
+        const response = await fetch('/chat', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({message: userMsg})
+        });
+        const data = await response.json();
+        addMessage(data.reply || 'Error: No reply', 'bot');
+      } catch(err){
+        addMessage('Error connecting to API', 'bot');
+      }
+    });
   </script>
 </body>
 </html>
